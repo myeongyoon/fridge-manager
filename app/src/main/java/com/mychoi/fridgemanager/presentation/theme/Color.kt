@@ -1,4 +1,4 @@
-package com.mychoi.fridgemanager.ui.theme
+package com.mychoi.fridgemanager.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
