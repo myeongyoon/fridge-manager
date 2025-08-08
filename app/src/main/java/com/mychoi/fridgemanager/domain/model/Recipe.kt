@@ -1,5 +1,8 @@
 package com.mychoi.fridgemanager.domain.model
 
+import com.mychoi.fridgemanager.domain.model.UserIngredient
+import com.mychoi.fridgemanager.domain.model.UserPreference
+
 data class Recipe(
     val id: String,
     val name: String,                           // 레시피 이름
