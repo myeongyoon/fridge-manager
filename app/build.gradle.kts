@@ -42,9 +42,10 @@ android {
     buildFeatures {
         compose = true
     }
-//    composeOptions {
-//        kotlinCompilerExtensionVersion = "1.5.8"
-//    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.8"
+    }
 
     packaging {
         resources {
@@ -54,8 +55,15 @@ android {
 }
 
 dependencies {
-    // Compose BOM - 모든 Compose 라이브러리 버전 관리
+    // Compose BOM을 통한 일관된 버전 관리
     implementation(platform(libs.androidx.compose.bom.v20240200))
+
+    // Core Android
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+
+    // Activity & Compose
+    implementation(libs.androidx.activity.compose.v182)
 
     // Compose
     implementation(libs.ui)
@@ -64,8 +72,7 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.androidx.material.icons.extended)
 
-    // Activity & ViewModel
-    implementation(libs.androidx.activity.compose.v182)
+    // ViewModel & Lifecycle
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
 
@@ -88,7 +95,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
-    // DataStore
+    // DataStore (User Preferences)
     implementation(libs.androidx.datastore.preferences)
 
     // Coroutines
@@ -97,30 +104,19 @@ dependencies {
     // Image Loading
     implementation(libs.coil.compose)
 
-    // Serialization
+    // JSON Serialization
     implementation(libs.kotlinx.serialization.json)
 
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit.v121)
     androidTestImplementation(libs.androidx.espresso.core.v361)
-    androidTestImplementation(platform(libs.androidx.compose.bom.v20250700))
+
+    // Compose Testing
+    androidTestImplementation(platform(libs.androidx.compose.bom.v20240200))
     androidTestImplementation(libs.ui.test.junit4)
+
+    // Debug Tools
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
 }

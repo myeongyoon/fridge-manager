@@ -1,18 +1,18 @@
 [versions]
+# 🔧 안정적인 호환 버전 조합으로 수정
+agp = "8.10.1"                    # ✅ 안정적인 AGP 버전
+kotlin = "1.9.22"                # ✅ 안정적인 Kotlin 버전
+ksp = "1.9.22-1.0.17"           # ✅ Kotlin 1.9.22 호환 KSP
+hilt = "2.48"
 activityComposeVersion = "1.8.2"
-agp = "8.10.1"
-androidxComposeBom = "2025.07.00"
+androidxComposeBom = "2024.02.00"  # ✅ 안정적인 BOM 버전
 androidxJunit = "1.2.1"
 coilCompose = "2.5.0"
-composeBomVersion = "2024.02.00"
+composeBomVersion = "2024.02.00"   # ✅ 메인 BOM과 동일하게
 datastorePreferences = "1.1.7"
 espressoCoreVersion = "3.6.1"
 gotrueKt = "2.0.0"
-hilt = "2.48"
-hiltAndroid = "2.48"
-hiltCompiler = "2.48"
 hiltNavigationCompose = "1.2.0"
-kotlin = "2.0.21"
 coreKtx = "1.10.1"
 junit = "4.13.2"
 junitVersion = "1.1.5"
@@ -22,24 +22,23 @@ kotlinxSerializationJson = "1.6.2"
 ktorClientAndroid = "2.3.7"
 lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
-composeBom = "2024.09.00"
-lifecycleViewmodelCompose = "2.9.2"
-navigationCompose = "2.9.2"
+composeBom = "2024.02.00"
+lifecycleViewmodelCompose = "2.8.6"  # ✅ 호환 버전으로 조정
+navigationCompose = "2.7.6"          # ✅ 호환 버전으로 조정
 postgrestKt = "2.0.0"
 realtimeKt = "2.0.0"
-roomCompiler = "2.7.2"
-roomKtx = "2.7.2"
-roomRuntime = "2.7.2"
-ksp = "1.9.0-1.0.13"
+roomCompiler = "2.6.1"              # ✅ 호환 버전으로 조정
+roomKtx = "2.6.1"                   # ✅ 호환 버전으로 조정
+roomRuntime = "2.6.1"               # ✅ 호환 버전으로 조정
 supabase = "2.0.0"
 ktor = "2.3.7"
-navigation = "2.7.7"
-composeCompiler = "1.5.8"
+navigation = "2.7.6"
+# 🔧 Compose Compiler는 Kotlin 1.9.22에서는 별도 설정 불필요
+composeCompiler = "1.5.8"           # ✅ Kotlin 1.9.22 호환
 
 [libraries]
 androidx-activity-compose-v182 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-compose-bom-v20240200 = { module = "androidx.compose:compose-bom", version.ref = "composeBomVersion" }
-androidx-compose-bom-v20250700 = { module = "androidx.compose:compose-bom", version.ref = "androidxComposeBom" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-espresso-core-v361 = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCoreVersion" }
@@ -54,8 +53,8 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx"
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coilCompose" }
 gotrue-kt = { module = "io.github.jan-tennert.supabase:gotrue-kt", version.ref = "gotrueKt" }
-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroid" }
-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hiltCompiler" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
@@ -85,8 +84,7 @@ ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-#kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "composeCompiler" }
+# 🔧 Kotlin 1.9.22에서는 기존 방식 사용 (Kotlin 2.0+ 전용 플러그인 제거)
