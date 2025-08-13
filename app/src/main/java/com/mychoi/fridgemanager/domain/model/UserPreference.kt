@@ -1,18 +1,12 @@
 package com.mychoi.fridgemanager.domain.model
 
 import kotlinx.serialization.Serializable
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * 사용자 선호도 및 설정 도메인 모델
  * user_profiles 테이블을 기반으로 한 사용자 맞춤 설정
- *
- * 실제 DB 스키마:
- * - id: UUID PRIMARY KEY REFERENCES auth.users(id)
- * - nickname: TEXT
- * - preferred_categories: TEXT[] DEFAULT '{}' (선호하는 요리 카테고리)
- * - cooking_skill_level: INTEGER DEFAULT 1 (요리 실력 1-5)
- * - preferred_cooking_time: INTEGER DEFAULT 60 (선호하는 최대 조리시간)
- * - created_at, updated_at: TIMESTAMP
  */
 @Serializable
 data class UserPreference(
@@ -21,8 +15,8 @@ data class UserPreference(
     val preferredCategories: List<String> = emptyList(), // DB의 preferred_categories 배열
     val cookingSkillLevel: Int = 1,              // DB의 cooking_skill_level (1-5)
     val preferredCookingTime: Int = 60,          // DB의 preferred_cooking_time (분)
-    val createdAt: String = getCurrentISODateTime(), // DB의 created_at
-    val updatedAt: String = getCurrentISODateTime(), // DB의 updated_at
+    val createdAt: String = "",                  // 🔧 수정: 기본값을 빈 문자열로 변경
+    val updatedAt: String = "",                  // 🔧 수정: 기본값을 빈 문자열로 변경
 
     // 추가 확장 필드들 (앱에서만 사용, 추후 DB 확장 시 추가)
     val displayName: String = nickname ?: "",
@@ -49,9 +43,10 @@ data class UserPreference(
         // 1. 요리 실력 수준 매칭 (가중치: 0.3)
         val skillWeight = 0.3
         val skillScore = when {
-            recipe.difficulty <= cookingSkillLevel -> 1.0
-            recipe.difficulty == cookingSkillLevel + 1 -> 0.7
-            else -> 0.3
+            recipe.difficulty != null && recipe.difficulty <= cookingSkillLevel -> 1.0
+            recipe.difficulty != null && recipe.difficulty == cookingSkillLevel + 1 -> 0.7
+            recipe.difficulty != null -> 0.3
+            else -> 0.5 // 난이도 정보가 없는 경우
         }
         score += skillScore * skillWeight
         totalWeight += skillWeight
@@ -59,9 +54,10 @@ data class UserPreference(
         // 2. 조리 시간 선호도 (가중치: 0.25)
         val timeWeight = 0.25
         val timeScore = when {
-            recipe.cookingTimeMinutes <= preferredCookingTime -> 1.0
-            recipe.cookingTimeMinutes <= preferredCookingTime + 15 -> 0.7
-            else -> 0.4
+            recipe.cookingTimeMinutes != null && recipe.cookingTimeMinutes <= preferredCookingTime -> 1.0
+            recipe.cookingTimeMinutes != null && recipe.cookingTimeMinutes <= preferredCookingTime + 15 -> 0.7
+            recipe.cookingTimeMinutes != null -> 0.4
+            else -> 0.5 // 조리 시간 정보가 없는 경우
         }
         score += timeScore * timeWeight
         totalWeight += timeWeight
@@ -71,7 +67,7 @@ data class UserPreference(
         val categoryScore = if (preferredCategories.isEmpty()) {
             0.5 // 선호 카테고리가 없으면 중립
         } else {
-            if (preferredCategories.contains(recipe.category)) 1.0 else 0.2
+            if (recipe.category != null && preferredCategories.contains(recipe.category)) 1.0 else 0.2
         }
         score += categoryScore * categoryWeight
         totalWeight += categoryWeight
@@ -80,7 +76,7 @@ data class UserPreference(
         val dislikedWeight = 0.15
         val hasDislikedIngredient = recipe.ingredients.any { recipeIngredient ->
             dislikedIngredients.any { disliked ->
-                recipeIngredient.name.contains(disliked, ignoreCase = true)
+                recipeIngredient.ingredientName.contains(disliked, ignoreCase = true)
             }
         }
         val dislikedScore = if (hasDislikedIngredient) 0.0 else 1.0
@@ -142,13 +138,13 @@ data class UserPreference(
         // 알레르기 체크
         val hasAllergen = recipe.ingredients.any { recipeIngredient ->
             allergies.any { allergen ->
-                recipeIngredient.name.contains(allergen, ignoreCase = true)
+                recipeIngredient.ingredientName.contains(allergen, ignoreCase = true)
             }
         }
 
         if (hasAllergen) {
             val allergens = allergies.filter { allergen ->
-                recipe.ingredients.any { it.name.contains(allergen, ignoreCase = true) }
+                recipe.ingredients.any { it.ingredientName.contains(allergen, ignoreCase = true) }
             }
             return RecommendationEligibility(
                 canRecommend = false,
@@ -166,7 +162,7 @@ data class UserPreference(
         }
 
         // 실력 수준 체크 (너무 어려운 레시피는 제외)
-        if (recipe.difficulty > cookingSkillLevel + 1) {
+        if (recipe.difficulty != null && recipe.difficulty > cookingSkillLevel + 1) {
             return RecommendationEligibility(
                 canRecommend = false,
                 reason = "요리 난이도가 너무 높음 (현재 실력: ${cookingSkillLevel}, 레시피 난이도: ${recipe.difficulty})"
@@ -183,8 +179,8 @@ data class UserPreference(
      */
     fun updatePreferences(updates: PreferenceUpdates): UserPreference {
         return copy(
-            displayName = updates.displayName ?: this.displayName,
-            skillLevel = updates.skillLevel ?: this.skillLevel,
+            nickname = updates.nickname ?: this.nickname,
+            cookingSkillLevel = updates.cookingSkillLevel ?: this.cookingSkillLevel,
             preferredCookingTime = updates.preferredCookingTime ?: this.preferredCookingTime,
             preferredCategories = updates.preferredCategories ?: this.preferredCategories,
             dislikedIngredients = updates.dislikedIngredients ?: this.dislikedIngredients,
@@ -216,24 +212,29 @@ data class UserPreference(
 
     companion object {
         /**
+         * 🔧 수정: API 호환성을 위해 SimpleDateFormat 사용
          * 현재 ISO 8601 날짜시간 문자열 반환
          */
-        private fun getCurrentISODateTime(): String {
-            return java.time.LocalDateTime.now().toString()
+        fun getCurrentISODateTime(): String {
+            val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            return dateTimeFormat.format(Date())
         }
 
         /**
-         * 기본 사용자 선호도 생성
+         * 🆕 추가: UserPreference 생성 헬퍼 메서드
          * @param userId 사용자 ID
          * @return 기본 설정이 적용된 사용자 선호도
          */
         fun createDefault(userId: String): UserPreference {
+            val currentDateTime = getCurrentISODateTime()
             return UserPreference(
                 userId = userId,
                 cookingSkillLevel = 1,
                 preferredCookingTime = 60,
                 preferredCategories = listOf("한식"),
-                householdSize = 1
+                householdSize = 1,
+                createdAt = currentDateTime,
+                updatedAt = currentDateTime
             )
         }
     }
@@ -261,17 +262,17 @@ enum class DietRestriction(val displayName: String, val description: String) {
         // 간단한 구현 (실제로는 더 정교한 검사 필요)
         return when (this) {
             VEGETARIAN -> !recipe.ingredients.any {
-                it.name.contains("고기") || it.name.contains("생선")
+                it.ingredientName.contains("고기") || it.ingredientName.contains("생선")
             }
             VEGAN -> !recipe.ingredients.any {
-                it.name.contains("고기") || it.name.contains("생선") ||
-                        it.name.contains("우유") || it.name.contains("달걀") || it.name.contains("치즈")
+                it.ingredientName.contains("고기") || it.ingredientName.contains("생선") ||
+                        it.ingredientName.contains("우유") || it.ingredientName.contains("달걀") || it.ingredientName.contains("치즈")
             }
             GLUTEN_FREE -> !recipe.ingredients.any {
-                it.name.contains("밀") || it.name.contains("글루텐")
+                it.ingredientName.contains("밀") || it.ingredientName.contains("글루텐")
             }
             LACTOSE_FREE -> !recipe.ingredients.any {
-                it.name.contains("우유") || it.name.contains("치즈") || it.name.contains("크림")
+                it.ingredientName.contains("우유") || it.ingredientName.contains("치즈") || it.ingredientName.contains("크림")
             }
             else -> true // 다른 제한사항은 추후 구현
         }

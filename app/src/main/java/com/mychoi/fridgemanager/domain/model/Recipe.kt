@@ -1,8 +1,5 @@
 package com.mychoi.fridgemanager.domain.model
 
-import com.mychoi.fridgemanager.domain.model.UserIngredient
-import com.mychoi.fridgemanager.domain.model.UserPreference
-
 data class Recipe(
     val id: String,
     val name: String,                           // 레시피 이름
@@ -32,7 +29,7 @@ data class Recipe(
     fun calculateMatchingScore(userIngredients: List<UserIngredient>): Double {
         if (ingredients.isEmpty()) return 0.0
 
-        val userIngredientNames = userIngredients.map { it.name.lowercase().trim() }.toSet()
+        val userIngredientNames = userIngredients.map { it.ingredientName.lowercase().trim() }.toSet()
         var totalScore = 0.0
         var matchedCount = 0
 
@@ -70,7 +67,7 @@ data class Recipe(
     fun getMatchingPercentage(userIngredients: List<UserIngredient>): Double {
         if (ingredients.isEmpty()) return 0.0
 
-        val userIngredientNames = userIngredients.map { it.name.lowercase().trim() }.toSet()
+        val userIngredientNames = userIngredients.map { it.ingredientName.lowercase().trim() }.toSet()
         val matchedCount = ingredients.count { recipeIngredient ->
             userIngredientNames.contains(recipeIngredient.ingredientName.lowercase().trim())
         }
@@ -82,7 +79,7 @@ data class Recipe(
      * 레시피에서 부족한 재료들 반환
      */
     fun getMissingIngredients(userIngredients: List<UserIngredient>): List<RecipeIngredient> {
-        val userIngredientNames = userIngredients.map { it.name.lowercase().trim() }.toSet()
+        val userIngredientNames = userIngredients.map { it.ingredientName.lowercase().trim() }.toSet()
         return ingredients.filter { recipeIngredient ->
             !userIngredientNames.contains(recipeIngredient.ingredientName.lowercase().trim())
         }
@@ -128,13 +125,14 @@ data class Recipe(
 
     /**
      * 사용자 선호도와의 호환성 점수 계산
+     * 🔧 수정됨: UserPreference의 올바른 속성명 사용
      */
     fun calculatePreferenceScore(userPreference: UserPreference): Double {
         var score = 0.0
 
-        // 조리 시간 선호도
+        // 조리 시간 선호도 (수정됨: preferredCookingTimeMinutes → preferredCookingTime)
         cookingTimeMinutes?.let { cookingTime ->
-            val timeDifference = kotlin.math.abs(cookingTime - userPreference.preferredCookingTimeMinutes)
+            val timeDifference = kotlin.math.abs(cookingTime - userPreference.preferredCookingTime)
             score += when {
                 timeDifference <= 10 -> 10.0
                 timeDifference <= 20 -> 5.0
@@ -143,7 +141,7 @@ data class Recipe(
             }
         }
 
-        // 난이도 선호도 (cooking_skill_level과 비교)
+        // 난이도 선호도 (수정됨: 올바른 속성명 사용)
         difficulty?.let { recipeDifficulty ->
             val skillDifference = kotlin.math.abs(recipeDifficulty - userPreference.cookingSkillLevel)
             score += when {
@@ -224,7 +222,7 @@ data class RecipeIngredient(
 
         // 분량 정보
         if (!amount.isNullOrBlank()) {
-            parts.add(amount)
+            parts.add(amount!!)
         }
 
         // 재료명

@@ -1,25 +1,12 @@
 package com.mychoi.fridgemanager.domain.model
 
 import kotlinx.serialization.Serializable
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+import java.text.SimpleDateFormat
+import java.util.*
 
 /**
  * 사용자 냉장고 재료 도메인 모델
  * user_ingredients 테이블을 기반으로 한 실제 냉장고 재료 정보
- *
- * 실제 DB 스키마:
- * - id: UUID PRIMARY KEY
- * - user_id: UUID REFERENCES user_profiles(id)
- * - ingredient_name: TEXT NOT NULL (ingredients_master의 name과 매칭)
- * - amount: TEXT ("3개", "500g")
- * - unit: TEXT ("개", "g", "ml")
- * - expiry_date: DATE (유통기한)
- * - purchase_date: DATE DEFAULT CURRENT_DATE (구매일)
- * - storage_location: TEXT DEFAULT '냉장실' ("냉장실", "냉동실", "실온")
- * - memo: TEXT (사용자 메모)
- * - created_at, updated_at: TIMESTAMP
  */
 @Serializable
 data class UserIngredient(
@@ -32,20 +19,27 @@ data class UserIngredient(
     val purchaseDate: String? = null,            // DB의 purchase_date
     val storageLocation: String = "냉장실",      // DB의 storage_location
     val memo: String = "",                       // DB의 memo
-    val createdAt: String = getCurrentISODate(), // DB의 created_at
-    val updatedAt: String = getCurrentISODate(), // DB의 updated_at
+    val createdAt: String = "",                  // 🔧 수정: 기본값을 빈 문자열로 변경
+    val updatedAt: String = "",                  // 🔧 수정: 기본값을 빈 문자열로 변경
     val syncStatus: SyncStatus = SyncStatus.LOCAL_ONLY
 ) {
 
     /**
      * 유통기한까지 남은 일수 계산
-     * @return 남은 일수 (음수면 유통기한 지남)
+     * 🔧 수정: API 호환성을 위해 SimpleDateFormat 사용
      */
     fun getDaysUntilExpiry(): Long {
         return try {
-            val expiry = LocalDate.parse(expiryDate)
-            val today = LocalDate.now()
-            ChronoUnit.DAYS.between(today, expiry)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val expiry = dateFormat.parse(expiryDate)
+            val today = Date()
+
+            if (expiry != null) {
+                val diffInMillis = expiry.time - today.time
+                diffInMillis / (24 * 60 * 60 * 1000) // 밀리초를 일수로 변환
+            } else {
+                0L
+            }
         } catch (e: Exception) {
             0L // 파싱 오류 시 0 반환
         }
@@ -75,7 +69,7 @@ data class UserIngredient(
     }
 
     /**
-     * 표시용 수량 문자열 생성 (이미 amount가 텍스트이므로 그대로 반환)
+     * 표시용 수량 문자열 생성
      * @return 수량과 단위를 포함한 문자열 (예: "500g", "2개")
      */
     fun getQuantityDisplay(): String {
@@ -130,7 +124,7 @@ data class UserIngredient(
      * @return 매칭 정보 (충분한 양이 있는지, 부족한 양은 얼마인지)
      */
     fun checkRecipeMatch(recipeIngredient: RecipeIngredient): IngredientMatch {
-        val isNameMatch = ingredientName.equals(recipeIngredient.name, ignoreCase = true)
+        val isNameMatch = ingredientName.equals(recipeIngredient.ingredientName, ignoreCase = true)
 
         if (!isNameMatch) {
             return IngredientMatch(
@@ -142,12 +136,15 @@ data class UserIngredient(
             )
         }
 
-        // 단위 변환 (간단한 버전, 실제로는 더 복잡한 변환 로직 필요)
-        val convertedQuantity = convertUnit(quantity, unit, recipeIngredient.unit)
-        val required = parseQuantity(recipeIngredient.amount)
+        // amount 문자열에서 숫자 추출 (예: "500g" -> 500.0)
+        val currentQuantity = parseQuantity(amount)
+        val requiredQuantity = parseQuantity(recipeIngredient.amount ?: "0")
 
-        val isSufficient = convertedQuantity >= required
-        val shortfall = if (isSufficient) 0.0 else required - convertedQuantity
+        // 단위 변환 (간단한 버전)
+        val convertedQuantity = convertUnit(currentQuantity, unit, recipeIngredient.unit ?: unit)
+
+        val isSufficient = convertedQuantity >= requiredQuantity
+        val shortfall = if (isSufficient) 0.0 else requiredQuantity - convertedQuantity
 
         return IngredientMatch(
             ingredient = this,
@@ -172,10 +169,44 @@ data class UserIngredient(
 
     companion object {
         /**
+         * 🔧 수정: API 호환성을 위해 SimpleDateFormat 사용
          * 현재 ISO 8601 날짜 문자열 반환
          */
-        private fun getCurrentISODate(): String {
-            return LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE)
+        fun getCurrentISODate(): String {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            return dateFormat.format(Date())
+        }
+
+        /**
+         * 🆕 추가: 현재 날짜시간 문자열 반환 (UserPreference와 호환)
+         */
+        fun getCurrentISODateTime(): String {
+            val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            return dateTimeFormat.format(Date())
+        }
+
+        /**
+         * 🆕 추가: UserIngredient 생성 헬퍼 메서드
+         */
+        fun create(
+            userId: String,
+            ingredientName: String,
+            amount: String,
+            unit: String,
+            expiryDate: String,
+            storageLocation: String = "냉장실"
+        ): UserIngredient {
+            val currentDate = getCurrentISODate()
+            return UserIngredient(
+                userId = userId,
+                ingredientName = ingredientName,
+                amount = amount,
+                unit = unit,
+                expiryDate = expiryDate,
+                storageLocation = storageLocation,
+                createdAt = currentDate,
+                updatedAt = currentDate
+            )
         }
 
         /**
@@ -198,7 +229,7 @@ data class UserIngredient(
         }
 
         /**
-         * 레시피 재료의 수량 문자열 파싱
+         * 재료 수량 문자열 파싱
          * @param amountString 수량 문자열 (예: "200g", "2개", "1큰술")
          * @return 파싱된 수량 (실패 시 0.0)
          */
@@ -284,7 +315,7 @@ data class IngredientMatch(
     fun getSummary(): String {
         return when {
             !isAvailable -> "❌ 재료 없음"
-            !isSufficientQuantity -> "⚠️ 부족함 (${shortfall}${recipeIngredient.unit} 모자람)"
+            !isSufficientQuantity -> "⚠️ 부족함 (${shortfall}${recipeIngredient.unit ?: ""} 모자람)"
             else -> "✅ 충분함"
         }
     }

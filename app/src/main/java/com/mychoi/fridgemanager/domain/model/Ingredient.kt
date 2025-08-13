@@ -132,10 +132,11 @@ data class Ingredient(
 
         /**
          * 카테고리별 재료 그룹화
+         * 🔧 수정됨: IngredientCategory → String으로 변경
          * @param ingredients 재료 목록
          * @return 카테고리별로 그룹화된 재료 맵
          */
-        fun groupByCategory(ingredients: List<Ingredient>): Map<IngredientCategory, List<Ingredient>> {
+        fun groupByCategory(ingredients: List<Ingredient>): Map<String, List<Ingredient>> {
             return ingredients.groupBy { it.category }
         }
 
@@ -146,6 +147,32 @@ data class Ingredient(
          */
         fun getCommonIngredients(ingredients: List<Ingredient>): List<Ingredient> {
             return ingredients.filter { it.isCommon }
+        }
+    }
+}
+
+/**
+ * 재료 카테고리 열거형
+ * 🆕 추가됨: 필요한 경우 이 enum을 사용할 수 있음
+ */
+enum class IngredientCategory(val displayName: String, val description: String) {
+    VEGETABLE("채소", "각종 채소류"),
+    MEAT("육류", "소고기, 돼지고기, 닭고기 등"),
+    SEAFOOD("해산물", "생선, 조개, 새우 등"),
+    DAIRY("유제품", "우유, 치즈, 요거트 등"),
+    GRAIN("곡류", "쌀, 밀가루, 면류 등"),
+    SEASONING("조미료", "소금, 설탕, 각종 양념"),
+    FRUIT("과일", "각종 과일류"),
+    NUT("견과류", "호두, 아몬드 등"),
+    OIL("유지류", "식용유, 참기름 등"),
+    ETC("기타", "기타 재료");
+
+    companion object {
+        /**
+         * 문자열로부터 카테고리 찾기
+         */
+        fun fromString(categoryString: String): IngredientCategory {
+            return values().find { it.displayName == categoryString } ?: ETC
         }
     }
 }
