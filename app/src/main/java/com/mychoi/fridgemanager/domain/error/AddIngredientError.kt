@@ -1,4 +1,7 @@
-package com.mychoi.fridgemanager.domain.model
+package com.mychoi.fridgemanager.domain.error
+
+import com.mychoi.fridgemanager.domain.model.StorageLocation
+import com.mychoi.fridgemanager.domain.model.UserIngredient
 
 /**
  * 재료 추가 과정에서 발생할 수 있는 모든 에러 케이스를 정의
@@ -140,10 +143,6 @@ fun AddIngredientError.toUserMessage(): String {
                 message
             }
         }
-
-        else -> {
-
-        }
     }
 }
 
@@ -163,7 +162,6 @@ fun AddIngredientError.getSuggestedAction(): UserAction {
         is AddIngredientError.InvalidStorageLocation -> UserAction.CORRECT_INPUT
         is AddIngredientError.AuthenticationError -> UserAction.LOGIN_REQUIRED
         is AddIngredientError.UnknownError -> UserAction.CONTACT_SUPPORT
-        else -> {}
     }
 }
 
@@ -202,7 +200,6 @@ fun AddIngredientError.getSeverityLevel(): ErrorSeverity {
         is AddIngredientError.InvalidStorageLocation -> ErrorSeverity.INFO
         is AddIngredientError.AuthenticationError -> ErrorSeverity.WARNING
         is AddIngredientError.UnknownError -> ErrorSeverity.CRITICAL
-        else -> {}
     }
 }
 

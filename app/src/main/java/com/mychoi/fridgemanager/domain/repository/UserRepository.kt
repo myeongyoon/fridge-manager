@@ -1,6 +1,7 @@
 package com.mychoi.fridgemanager.domain.repository
 
 import com.mychoi.fridgemanager.domain.model.*
+import com.mychoi.fridgemanager.domain.error.AddIngredientError
 import com.mychoi.fridgemanager.domain.request.CreateIngredientRequest
 import kotlinx.coroutines.flow.Flow
 
